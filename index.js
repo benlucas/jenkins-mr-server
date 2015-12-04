@@ -2,9 +2,19 @@ var express = require('express');
 var jenkinsapi = require('jenkins-api');
 var app = express();
 var http = require('http').Server(app);
-var io = require('socket.io')(http);
+var https = require('https');
+var fs = require('fs');
 var jenkins = jenkinsapi.init('http://blu01:5afd2840073f0d6211b7342fb33ee7e7@jenkins.ssdm.bskyb.com:8080/jenkins', {strictSSL: false});
 
+
+var httpsOptions = {
+  key:  fs.readFileSync('certs/server/my-server.key.pem'),
+  cert: fs.readFileSync('certs/server/my-server.crt.pem'),
+  ca:   fs.readFileSync('certs/server/my-root-ca.crt.pem')
+};
+
+var httpsServer = https.createServer(httpsOptions);
+io = require('socket.io').listen(httpsServer);
 
 
 var currentJobNumber = 0;
@@ -56,6 +66,12 @@ var triggerBuild = function(repo, branch, callback){
   });
 };
 
+
+httpsServer.listen(3000, function () {
+
+  console.log('Example app listening at ');
+});
+
 // app.post('/', function (req, res) {
 
 //   if (!req.body) {
@@ -67,9 +83,9 @@ var triggerBuild = function(repo, branch, callback){
 
 // http://blu01:5afd2840073f0d6211b7342fb33ee7e7@jenkins.ssdm.bskyb.com:8080/jenkins/view/sdc-packages/job/package-match-base/buildWithParameters?BRANCH=master
 
-var server = http.listen(3000, function () {
-  var host = server.address().address;
-  var port = server.address().port;
+// var server = http.listen(3000, function () {
+//   var host = server.address().address;
+//   var port = server.address().port;
 
-  console.log('Example app listening at http://%s:%s', host, port);
-});
+//   console.log('Example app listening at http://%s:%s', host, port);
+// });
