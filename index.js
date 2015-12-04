@@ -40,13 +40,23 @@ var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, callb
     jenkins.build_info(packageName, expectedBuildNumber, function(err, data) {
       if (err || data.building){
         console.log(packageName + " is in progress");
+        socket.emit('status_change', {
+          job_name: packageName,
+          job_number: expectedBuildNumber,
+          status: 1
+        });
         setTimeout(fetch, 5000);
         return;
       }
 
       console.log(data);
       console.log(packageName + " has finished");
-      socket.emit('status_finished', {status:2});
+      var result = data.result == 'SUCCESS' ? 2 : 3;
+      socket.emit('status_change', {
+        job_name: packageName,
+        job_number: expectedBuildNumber,
+        status: result
+      });
 
     });
   };
