@@ -39,7 +39,7 @@ io.on('connection', function(socket){
 
       if(jobs[property].status == status.pending) {
         console.log("Job is pending, start watching it!");
-        watchRepo(socket, payload.repository);
+        watchRepo(socket, payload.repository, payload.recent_hash);
       }
       if(jobs[property].status == status.success) {
         console.log("Job is success");
