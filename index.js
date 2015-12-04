@@ -26,16 +26,40 @@ io.on('connection', function(socket){
     console.log("In Status update");
     console.log(payload);
 
-    triggerBuild(socket, payload.repository, payload.branch, function(){
-      socket.emit('status_finished', {status:2});
-    });
+    var property = payload.repository+payload.recentHash;
+    var jobExists = jobs.hasOwnProperty(property);
+
+    if(jobExists){
+      console.log("Job exists! " + property);
+      socket.emit('status_change', {
+        job_name: packageName,
+        job_number: expectedBuildNumber,
+        status: jobs[property]
+      });
+
+      if(jobs[property] == 1) {
+        console.log("Job is pending, start watching it!");
+        watchRepo(socket, payload.repository);
+      }
+      if(jobs[property] == 2) {
+        console.log("Job is success");
+      }
+      if(jobs[property] == 3) {
+        console.log("Job is failure");
+      }
+
+      return;
+    }
+
+    jobs[property] = 1;
+    triggerBuild(socket, payload.repository, payload.branch, payload.recentHash);
   });
 });
 
 
 
 
-var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, callback) {
+var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, hash) {
   var fetch = function(){
     jenkins.build_info(packageName, expectedBuildNumber, function(err, data) {
       if (err || data.building){
@@ -48,10 +72,14 @@ var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, callb
         setTimeout(fetch, 5000);
         return;
       }
+      var result = data.result == 'SUCCESS' ? 2 : 3;
+      var property = packageName+hash;
 
       console.log(data);
       console.log(packageName + " has finished");
-      var result = data.result == 'SUCCESS' ? 2 : 3;
+
+      jobs[property] = result;
+
       socket.emit('status_change', {
         job_name: packageName,
         job_number: expectedBuildNumber,
@@ -65,27 +93,31 @@ var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, callb
 };
 
 
-var triggerBuild = function(socket, repo, branch, callback){
+var triggerBuild = function(socket, repo, branch, hash){
   jenkins.build(repo, {BRANCH: branch}, function(err, data) {
 
-    jenkins.last_build_info(repo, function(err, data) {
-      if (err){ return console.log(err); }
-
-      socket.emit("status_change", {
-        job_name: repo,
-        job_number: data.number+1,
-        status: 1
-      });
-
-      pollBuildTillDone(socket, repo, data.number+1, callback);
-
-    });
+    watchRepo(socket, repo, hash);
 
   });
 };
 
 
-httpsServer.listen(3000, function () {
+var watchRepo = function(socket, repo, hash) {
+  jenkins.last_build_info(repo, function(err, data) {
+    if (err){ return console.log(err); }
 
+    socket.emit("status_change", {
+      job_name: repo,
+      job_number: data.number+1,
+      status: 1
+    });
+
+    pollBuildTillDone(socket, repo, data.number+1, hash);
+
+  });
+}
+
+
+httpsServer.listen(3000, function () {
   console.log('Example app listening at ');
 });
