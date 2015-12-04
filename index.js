@@ -1,29 +1,56 @@
 var express = require('express');
-//var io = require('socket.io')(80);
 var jenkinsapi = require('jenkins-api');
 var app = express();
 var jenkins = jenkinsapi.init('http://blu01:5afd2840073f0d6211b7342fb33ee7e7@jenkins.ssdm.bskyb.com:8080/jenkins', {strictSSL: false});
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
 
 app.use( bodyParser.json() );       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
   extended: true
-})); 
+}));
+
+var currentJobNumber = 0;
+
+
+
+var pollBuildTillDone = function(packageName, expectedBuildNumber, callback) {
+  var fetch = function(){
+    jenkins.build_info(packageName, expectedBuildNumber, function(err, data) {
+      if (err){
+        console.log(packageName + " is in progress");
+        setTimeout(fetch, 5000);
+        return;
+      }
+      console.log(packageName + " is done!");
+
+
+    });
+  };
+
+  setTimeout(fetch, 500);
+};
+
 
 app.post('/', function (req, res) {
+
   if (!req.body) {
-  	res.json({message: 'no package name set'});
-  } else {
-  	jenkins.build(req.body.package_name, {BRANCH: 'master'}, function(err, data) {
-  		res.json({message: 'build started for ' + req.body.package_name});
-  		jenkins.last_build_info(req.body.package_name, function(err, data) {
-		  if (err){ return console.log(err); }
-		  console.log(data);
-		});
-    if (err){ return console.log(err); }
-    	console.log(data);
-    });
+    res.json({message: 'no package name set'});
+    return;
   }
+
+  jenkins.build(req.body.package_name, {BRANCH: 'master'}, function(err, data) {
+    res.json({message: 'build started for ' + req.body.package_name});
+
+    jenkins.last_build_info(req.body.package_name, function(err, data) {
+      if (err){ return console.log(err); }
+
+      pollBuildTillDone(req.body.package_name, data.number+1);
+
+    });
+
+    // if (err){ return console.log(err); }
+    // console.log(data);
+  });
 });
 
 // http://blu01:5afd2840073f0d6211b7342fb33ee7e7@jenkins.ssdm.bskyb.com:8080/jenkins/view/sdc-packages/job/package-match-base/buildWithParameters?BRANCH=master
