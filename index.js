@@ -26,7 +26,7 @@ io.on('connection', function(socket){
     console.log("In Status update");
     console.log(payload);
 
-    var property = payload.repository+payload.recentHash;
+    var property = payload.repository+payload.recent_hash;
     var jobExists = jobs.hasOwnProperty(property);
 
     if(jobExists){
