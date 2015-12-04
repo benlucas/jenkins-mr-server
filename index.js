@@ -32,7 +32,7 @@ io.on('connection', function(socket){
     if(jobExists){
       console.log("Job exists! " + property);
       socket.emit('status_change', {
-        job_name: packageName,
+        job_name: repository,
         job_number: expectedBuildNumber,
         status: jobs[property]
       });
