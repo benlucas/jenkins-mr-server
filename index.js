@@ -1,14 +1,11 @@
 var express = require('express');
 var jenkinsapi = require('jenkins-api');
-var io = require('socket.io')(3001);
 var app = express();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
 var jenkins = jenkinsapi.init('http://blu01:5afd2840073f0d6211b7342fb33ee7e7@jenkins.ssdm.bskyb.com:8080/jenkins', {strictSSL: false});
-var bodyParser = require('body-parser');
 
-app.use( bodyParser.json() );       // to support JSON-encoded bodies
-app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
-  extended: true
-}));
+
 
 var currentJobNumber = 0;
 
@@ -70,7 +67,7 @@ var triggerBuild = function(repo, branch, callback){
 
 // http://blu01:5afd2840073f0d6211b7342fb33ee7e7@jenkins.ssdm.bskyb.com:8080/jenkins/view/sdc-packages/job/package-match-base/buildWithParameters?BRANCH=master
 
-var server = app.listen(3000, function () {
+var server = http.listen(3000, function () {
   var host = server.address().address;
   var port = server.address().port;
 
