@@ -23,6 +23,9 @@ var currentJobNumber = 0;
 io.on('connection', function(socket){
   console.log("someone connected!");
   socket.on('status_update', function(payload){
+    console.log("In Status update");
+    console.log(payload);
+
     triggerBuild(payload.repository, payload.branch, function(){
       socket.emit('status_finished', {status:2});
     });
