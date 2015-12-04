@@ -51,6 +51,7 @@ io.on('connection', function(socket){
       return;
     }
 
+    console.log(property);
     jobs[property] = {
       status: status.pending,
       job_number: null
@@ -61,6 +62,7 @@ io.on('connection', function(socket){
 
 var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, hash) {
   var property = packageName+hash;
+  console.log(property);
   jobs[property].job_number = expectedBuildNumber;
 
 
