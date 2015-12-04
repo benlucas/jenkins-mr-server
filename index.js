@@ -4,7 +4,6 @@ var https = require('https');
 var fs = require('fs');
 var jenkins = jenkinsapi.init('http://blu01:5afd2840073f0d6211b7342fb33ee7e7@jenkins.ssdm.bskyb.com:8080/jenkins', {strictSSL: false});
 
-
 var httpsOptions = {
   key:  fs.readFileSync('certs/server/my-server.key.pem'),
   cert: fs.readFileSync('certs/server/my-server.crt.pem'),
@@ -15,10 +14,6 @@ var httpsServer = https.createServer(httpsOptions);
 io = require('socket.io').listen(httpsServer);
 
 var jobs = {};
-
-
-var currentJobNumber = 0;
-
 
 io.on('connection', function(socket){
   console.log("someone connected!");
@@ -33,33 +28,34 @@ io.on('connection', function(socket){
       console.log("Job exists! " + property);
       socket.emit('status_change', {
         job_name: payload.repository,
-        job_number: '',
-        status: jobs[property]
+        job_number: jobs[property].job_number,
+        status: jobs[property].status
       });
 
-      if(jobs[property] == 1) {
+      if(jobs[property].status == 1) {
         console.log("Job is pending, start watching it!");
         watchRepo(socket, payload.repository);
       }
-      if(jobs[property] == 2) {
+      if(jobs[property].status == 2) {
         console.log("Job is success");
       }
-      if(jobs[property] == 3) {
+      if(jobs[property].status == 3) {
         console.log("Job is failure");
       }
 
       return;
     }
 
-    jobs[property] = 1;
-    triggerBuild(socket, payload.repository, payload.branch, payload.recentHash);
+    jobs[property].status = 1;
+    triggerBuild(socket, payload.repository, payload.branch, payload.recent_hash);
   });
 });
 
-
-
-
 var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, hash) {
+  var property = packageName+hash;
+  jobs[property].job_number = expectedBuildNumber;
+
+
   var fetch = function(){
     jenkins.build_info(packageName, expectedBuildNumber, function(err, data) {
       if (err || data.building){
@@ -73,12 +69,11 @@ var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, hash)
         return;
       }
       var result = data.result == 'SUCCESS' ? 2 : 3;
-      var property = packageName+hash;
 
       console.log(data);
       console.log(packageName + " has finished");
 
-      jobs[property] = result;
+      jobs[property].status = result;
 
       socket.emit('status_change', {
         job_name: packageName,
@@ -92,7 +87,6 @@ var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, hash)
   setTimeout(fetch, 500);
 };
 
-
 var triggerBuild = function(socket, repo, branch, hash){
   jenkins.build(repo, {BRANCH: branch}, function(err, data) {
 
@@ -100,7 +94,6 @@ var triggerBuild = function(socket, repo, branch, hash){
 
   });
 };
-
 
 var watchRepo = function(socket, repo, hash) {
   jenkins.last_build_info(repo, function(err, data) {
@@ -116,7 +109,6 @@ var watchRepo = function(socket, repo, hash) {
 
   });
 }
-
 
 httpsServer.listen(3000, function () {
   console.log('Example app listening at ');
