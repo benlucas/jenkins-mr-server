@@ -35,7 +35,7 @@ io.on('connection', function(socket){
 
 
 
-var pollBuildTillDone = function(packageName, expectedBuildNumber, callback) {
+var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, callback) {
   var fetch = function(){
     jenkins.build_info(packageName, expectedBuildNumber, function(err, data) {
       if (err || data.building){
@@ -44,7 +44,9 @@ var pollBuildTillDone = function(packageName, expectedBuildNumber, callback) {
         return;
       }
 
-      callback(data);
+      console.log(data);
+      console.log(packageName + " has finished");
+      socket.emit('status_finished', {status:2});
 
     });
   };
@@ -65,7 +67,7 @@ var triggerBuild = function(socket, repo, branch, callback){
         status: 1
       });
 
-      pollBuildTillDone(repo, data.number+1, callback);
+      pollBuildTillDone(socket, repo, data.number+1, callback);
 
     });
 
