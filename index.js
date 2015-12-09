@@ -98,7 +98,11 @@ var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, hash)
 };
 
 var triggerBuild = function(socket, repo, branch, hash){
-  jenkins.build(repo, {BRANCH: branch}, function(err, data) {
+    var buildParams = {
+        'branch' : branch
+    };
+    console.log("BUILD PARAMS:"packageName + " has finished");
+  jenkins.build(repo, buildParams, function(err, data) {
     watchRepo(socket, repo, hash);
   });
 };
