@@ -101,7 +101,7 @@ var triggerBuild = function(socket, repo, branch, hash){
     var buildParams = {
         'branch' : branch
     };
-    console.log("BUILD PARAMS:"packageName + " has finished");
+    console.log("BUILD PARAMS:" + buildParams + " has finished");
   jenkins.build(repo, buildParams, function(err, data) {
     watchRepo(socket, repo, hash);
   });
