@@ -99,7 +99,7 @@ var pollBuildTillDone = function(socket, packageName, expectedBuildNumber, hash)
 
 var triggerBuild = function(socket, repo, branch, hash){
     var buildParams = {
-        'branch' : branch
+        'BRANCH' : branch
     };
     console.log("BUILD PARAMS:" + JSON.stringify(buildParams) + " has finished");
   jenkins.build(repo, buildParams, function(err, data) {
